@@ -1,72 +1,61 @@
 import streamlit as st
 import pandas as pd
 
-def calculate_materials(final_cast, rebar_comp, ferroalloys, steel_comp):
-    results = {}
-    required_masses = {"Rebar": 0, "FeMn": 0, "FeSi": 0, "FeCr": 0, "FeMo": 0, "Cu": 0, "Ni": 0}
+def calculate_materials(final_cast, alloys):
+    results = {"Rebar": 0, "FeMn": 0, "FeSi": 0, "FeCr": 0, "FeMo": 0, "Cu": 0, "Graphite": 0}
     
-    rebar_mass = final_cast * 0.98
-    required_masses["Rebar"] = rebar_mass
+    # Composition of rebar
+    rebar_composition = {"C": 0.2, "Mn": 0.7, "Si": 0.2, "Fe": "Balance"}
     
-    Mn_from_rebar = rebar_mass * rebar_comp["Mn"] / 100
-    Si_from_rebar = rebar_mass * rebar_comp["Si"] / 100
+    # Calculate initial rebar mass
+    rebar_mass = final_cast * 0.98  # Approximate Fe contribution
+    results["Rebar"] = rebar_mass
     
-    Mn_needed = (final_cast * steel_comp["Mn"] / 100) - Mn_from_rebar
-    Si_needed = (final_cast * steel_comp["Si"] / 100) - Si_from_rebar
-    Cr_needed = (final_cast * steel_comp["Cr"] / 100)
-    Mo_needed = (final_cast * steel_comp["Mo"] / 100)
-    Cu_needed = (final_cast * steel_comp["Cu"] / 100)
-    Ni_needed = (final_cast * steel_comp["Ni"] / 100)
+    # Mn, C, and Si from rebar
+    Mn_from_rebar = rebar_mass * rebar_composition["Mn"] / 100
+    Si_from_rebar = rebar_mass * rebar_composition["Si"] / 100
     
+    # Required elements
+    Mn_needed = (final_cast * alloys["Mn"] / 100) - Mn_from_rebar
+    Si_needed = (final_cast * alloys["Si"] / 100) - Si_from_rebar
+    C_needed = final_cast * alloys["C"] / 100  # No C in rebar, so full addition needed
+    
+    # Calculate FeMn first
     if Mn_needed > 0:
-        required_masses["FeMn"] = Mn_needed / (ferroalloys["FeMn"]["Mn"] / 100)
-    if Si_needed > 0:
-        required_masses["FeSi"] = Si_needed / (ferroalloys["FeSi"]["Si"] / 100)
-    if Cr_needed > 0:
-        required_masses["FeCr"] = Cr_needed / (ferroalloys["FeCr"]["Cr"] / 100)
-    if Mo_needed > 0:
-        required_masses["FeMo"] = Mo_needed / (ferroalloys["FeMo"]["Mo"] / 100)
-    if Cu_needed > 0:
-        required_masses["Cu"] = Cu_needed
-    if Ni_needed > 0:
-        required_masses["Ni"] = Ni_needed
+        FeMn_mass = Mn_needed / (78 / 100)  # FeMn is 78% Mn
+        results["FeMn"] = FeMn_mass
+        
+        # Carbon and Si contributions from FeMn
+        C_from_FeMn = FeMn_mass * 0.5 / 100
+        Si_from_FeMn = FeMn_mass * 1.35 / 100
+        C_needed -= C_from_FeMn
+        Si_needed -= Si_from_FeMn
     
-    return required_masses
+    # Adjust Carbon using Graphite if needed
+    if C_needed > 0:
+        results["Graphite"] = C_needed / (100 / 100)  # Pure Graphite assumed
+    
+    # Adjust Silicon using FeSi if needed
+    if Si_needed > 0:
+        results["FeSi"] = Si_needed / (70.16 / 100)
+    
+    # Calculate FeCr, FeMo, and Cu
+    results["FeCr"] = (final_cast * alloys["Cr"] / 100) / (60 / 100)
+    results["FeMo"] = (final_cast * alloys["Mo"] / 100) / (59.56 / 100)
+    results["Cu"] = final_cast * alloys["Cu"] / 100
+    
+    return results
 
-st.title("Steel Composition Calculator")
+# Streamlit UI
+st.title("Steel Melt Material Calculator")
+final_cast = st.number_input("Enter Final Cast Requirement (kg)", min_value=1.0, value=10.0)
 
-final_cast = st.number_input("Final Cast Requirement (kg)", min_value=1, value=10)
+def_input = {"C": 0.22, "Mn": 1.4, "Si": 0.4, "Cr": 0.7, "Mo": 0.5, "Cu": 0.5}
+alloy_compositions = {}
+for element, default in def_input.items():
+    alloy_compositions[element] = st.number_input(f"{element} (%)", min_value=0.0, value=default)
 
-st.subheader("Enter Rebar Composition (% by weight)")
-rebar_comp = {
-    "C": st.number_input("Carbon in Rebar", value=0.2),
-    "Mn": st.number_input("Manganese in Rebar", value=0.7),
-    "Si": st.number_input("Silicon in Rebar", value=0.2),
-    "P": st.number_input("Phosphorus in Rebar", value=0.023),
-    "Al": st.number_input("Aluminum in Rebar", value=0.0015),
-}
-
-st.subheader("Enter Ferroalloy Compositions (% by weight)")
-ferroalloys = {
-    "FeMn": {"Mn": st.number_input("Mn in FeMn", value=78.0)},
-    "FeSi": {"Si": st.number_input("Si in FeSi", value=70.16)},
-    "FeCr": {"Cr": st.number_input("Cr in FeCr", value=60.0)},
-    "FeMo": {"Mo": st.number_input("Mo in FeMo", value=59.56)},
-}
-
-st.subheader("Enter Required Steel Composition (% by weight)")
-steel_comp = {
-    "C": st.number_input("Carbon in Steel", value=0.22),
-    "Mn": st.number_input("Manganese in Steel", value=1.4),
-    "Si": st.number_input("Silicon in Steel", value=0.4),
-    "P": st.number_input("Phosphorus in Steel", value=0.02),
-    "Cr": st.number_input("Chromium in Steel", value=0.7),
-    "Mo": st.number_input("Molybdenum in Steel", value=0.5),
-    "Ni": st.number_input("Nickel in Steel", value=0.9),
-    "Cu": st.number_input("Copper in Steel", value=0.5),
-}
-
-if st.button("Calculate Required Materials"):
-    results = calculate_materials(final_cast, rebar_comp, ferroalloys, steel_comp)
-    df = pd.DataFrame(results.items(), columns=["Material", "Required Mass (kg)"])
-    st.write(df)
+if st.button("Calculate"):
+    result = calculate_materials(final_cast, alloy_compositions)
+    df = pd.DataFrame(result.items(), columns=["Material", "Required Mass (kg)"])
+    st.table(df)
