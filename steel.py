@@ -8,7 +8,7 @@ def calculate_materials(final_cast, rebar_comp, ferroalloys, steel_comp):
 
 
     
-    rebar_mass = final_cast * 0.95
+    rebar_mass = final_cast * 0.98
     required_masses["Rebar"] = rebar_mass
     
     Mn_from_rebar = rebar_mass * rebar_comp["Mn"] / 100
