@@ -1,5 +1,6 @@
 import streamlit as st
 
+# Function to calculate alloy additions
 def calculate_alloy_addition(target_weight, final_composition, base_composition, alloy_compositions):
     alloy_addition = {}
     base_weight = target_weight * 0.95  # Assuming base metal contributes 95%
@@ -16,11 +17,37 @@ def calculate_alloy_addition(target_weight, final_composition, base_composition,
     
     return alloy_addition
 
-st.title("Alloy Addition Calculator")
+# Streamlit UI with a funky design
+st.set_page_config(page_title="Alloy Addition Calculator", page_icon="🔥", layout="centered")
+st.markdown("""
+    <style>
+        body {
+            background-color: #1e1e2e;
+            color: #f8f8f2;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+        .stApp {
+            background-color: #1e1e2e;
+        }
+        h1 {
+            text-align: center;
+            color: #ff79c6;
+            font-size: 40px;
+        }
+        .stButton>button {
+            background-color: #50fa7b;
+            color: #282a36;
+            font-size: 18px;
+            border-radius: 10px;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+st.title("🔥 Alloy Addition Calculator 🔥")
 
 # User Inputs
-target_weight = st.number_input("Enter total cast weight (grams):", min_value=0.0, value=5000.0, step=100.0)
-copper_content = st.number_input("Enter desired Cu composition (%):", min_value=0.0, max_value=10.0, value=0.4, step=0.1)
+target_weight = st.number_input("💎 Enter total cast weight (grams):", min_value=0.0, value=5000.0, step=100.0)
+copper_content = st.number_input("🛠 Enter desired Cu composition (%):", min_value=0.0, max_value=10.0, value=0.4, step=0.1)
 
 # Fixed Rebar Composition
 rebar_composition = {
@@ -50,13 +77,18 @@ alloy_compositions = {
     "Cu": {"alloy": "Cu", "percentage": 100}
 }
 
+# Perform Calculation
 alloy_addition = calculate_alloy_addition(target_weight, final_composition, rebar_composition, alloy_compositions)
 
 total_alloy_weight = sum(alloy_addition.values())
 base_metal_weight = target_weight - total_alloy_weight
 
-st.write("### Alloy additions required (grams):")
+# Display Results
+st.markdown("### 🎯 Alloy additions required (grams):")
 for alloy, amount in alloy_addition.items():
-    st.write(f"{alloy}: {amount:.2f}g")
+    st.success(f"{alloy}: {amount:.2f}g")
 
-st.write(f"### Total rebar addition: {base_metal_weight:.2f}g")
+st.markdown(f"### ⚡ Total rebar addition: **{base_metal_weight:.2f}g**")
+
+st.markdown("---")
+st.markdown("👨‍🔬 Built using Streamlit by Arjun Rai")
